@@ -6,11 +6,16 @@ public class CreateOrderCommand {
     private final String userId;
     private final List<CreateOrderItem> items;
     private final CreateOrderAddress shippingAddress;
+    private final String couponCode;
 
-    public CreateOrderCommand(String userId, List<CreateOrderItem> items, CreateOrderAddress shippingAddress) {
+    public CreateOrderCommand(String userId,
+                              List<CreateOrderItem> items,
+                              CreateOrderAddress shippingAddress,
+                              String couponCode) {
         this.userId = userId;
         this.items = items;
         this.shippingAddress = shippingAddress;
+        this.couponCode = couponCode;
     }
 
     public String getUserId() {
@@ -23,6 +28,10 @@ public class CreateOrderCommand {
 
     public CreateOrderAddress getShippingAddress() {
         return shippingAddress;
+    }
+
+    public String getCouponCode() {
+        return couponCode;
     }
 
     public static class CreateOrderItem {

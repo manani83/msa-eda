@@ -45,6 +45,8 @@ public class OrderPersistenceAdapter implements OrderCommandPort {
         entity.setUserId(order.getUserId());
         entity.setStatus(order.getStatus().name());
         entity.setTotalAmount(order.getTotalAmount().getAmount());
+        entity.setDiscountAmount(order.getDiscountAmount().getAmount());
+        entity.setCouponCode(order.getCouponCode());
         entity.setShippingZip(order.getShippingAddress().getZip());
         entity.setShippingLine1(order.getShippingAddress().getLine1());
         entity.setShippingLine2(order.getShippingAddress().getLine2());
@@ -82,6 +84,8 @@ public class OrderPersistenceAdapter implements OrderCommandPort {
                 items,
                 address,
                 OrderStatus.valueOf(entity.getStatus()),
+                entity.getCouponCode(),
+                Money.of(entity.getDiscountAmount()),
                 Money.of(entity.getTotalAmount()),
                 entity.getCreatedAt()
         );

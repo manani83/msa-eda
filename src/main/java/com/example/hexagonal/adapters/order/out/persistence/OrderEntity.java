@@ -28,6 +28,12 @@ public class OrderEntity {
     @Column(nullable = false)
     private long totalAmount;
 
+    @Column(nullable = false)
+    private long discountAmount;
+
+    @Column
+    private String couponCode;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -88,6 +94,22 @@ public class OrderEntity {
 
     public void setTotalAmount(long totalAmount) {
         this.totalAmount = totalAmount;
+    }
+
+    public long getDiscountAmount() {
+        return discountAmount;
+    }
+
+    public void setDiscountAmount(long discountAmount) {
+        this.discountAmount = discountAmount;
+    }
+
+    public String getCouponCode() {
+        return couponCode;
+    }
+
+    public void setCouponCode(String couponCode) {
+        this.couponCode = couponCode;
     }
 
     public Instant getCreatedAt() {

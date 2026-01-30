@@ -6,6 +6,7 @@ public class CreateOrderRequest {
     private String userId;
     private List<Item> items;
     private Address shippingAddress;
+    private String couponCode;
 
     public CreateOrderRequest() {
     }
@@ -32,6 +33,14 @@ public class CreateOrderRequest {
 
     public void setShippingAddress(Address shippingAddress) {
         this.shippingAddress = shippingAddress;
+    }
+
+    public String getCouponCode() {
+        return couponCode;
+    }
+
+    public void setCouponCode(String couponCode) {
+        this.couponCode = couponCode;
     }
 
     public static class Item {

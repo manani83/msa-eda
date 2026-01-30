@@ -36,12 +36,19 @@ public class OrderController {
                 ))
                 .collect(Collectors.toList());
 
-        CreateOrderCommand command = new CreateOrderCommand(request.getUserId(), items, address);
+        CreateOrderCommand command = new CreateOrderCommand(
+                request.getUserId(),
+                items,
+                address,
+                request.getCouponCode()
+        );
         CreateOrderResult result = createOrderUseCase.create(command);
 
         return new CreateOrderResponse(
                 result.getOrderId(),
                 result.getStatus().name(),
+                result.getCouponCode(),
+                result.getDiscountAmount(),
                 result.getTotalAmount(),
                 result.getCreatedAt()
         );
