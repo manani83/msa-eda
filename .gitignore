@@ -6,7 +6,6 @@ build/
 # IDE
 .idea/
 *.iml
-out/
 .classpath
 .project
 .settings/
