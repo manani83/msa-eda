@@ -1,1 +1,2 @@
 rootProject.name = 'hexagonal-api'
+include 'app', 'order', 'coupon'
