@@ -15,6 +15,9 @@ build/
 logs/
 *.log
 
+# Docker images
+app/docker-images/
+
 # OS
 .DS_Store
 Thumbs.db
