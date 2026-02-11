@@ -3,13 +3,20 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+IMAGE_NAME="hexagonal-app:dev"
+IMAGE_TAR_DIR="app/docker-images"
+IMAGE_TAR_PATH="${IMAGE_TAR_DIR}/hexagonal-app_dev.tar"
+
+./gradlew :app:bootJar
+
+docker build -t "${IMAGE_NAME}" -f app/Dockerfile app
+
+mkdir -p "${IMAGE_TAR_DIR}"
+docker save "${IMAGE_NAME}" -o "${IMAGE_TAR_PATH}"
+
+docker load -i "${IMAGE_TAR_PATH}"
+
 docker compose up -d
-
-SPRING_PID_FILE=app/build/app.pid \
-SPRING_PID_FAIL_ON_WRITE_ERROR=true \
-./gradlew :app:bootRun > app/build/bootRun.log 2>&1 &
-
-echo "bootRun started (logs: app/build/bootRun.log)"
 
 if command -v curl >/dev/null 2>&1; then
   echo "Waiting for app health check on http://localhost:8080/hello ..."

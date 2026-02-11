@@ -14,5 +14,17 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+  app:
+    image: hexagonal-app:dev
+    container_name: hexagonal-app
+    depends_on:
+      - mysql
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/hexagonal
+      SPRING_DATASOURCE_USERNAME: app
+      SPRING_DATASOURCE_PASSWORD: apppass
+      TZ: Asia/Seoul
 volumes:
   mysql_data:
