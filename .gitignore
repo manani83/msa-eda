@@ -25,3 +25,6 @@ Thumbs.db
 # JVM
 hs_err_pid*
 replay_pid*
+
+#K8s
+k8s/
