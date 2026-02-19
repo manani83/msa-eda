@@ -5,6 +5,10 @@ spring:
     username: app
     password: apppass
   jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
     hibernate:
       ddl-auto: update
     open-in-view: false
@@ -18,3 +22,9 @@ spring:
       enabled: false
 server:
   port: 8080
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.orm.jdbc.bind: TRACE
