@@ -71,4 +71,35 @@ class OrderControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("COUPON_INVALID"));
     }
+
+    @Test
+    void create_order_returns_bad_request_when_items_missing() throws Exception {
+        String payload = """
+                {
+                  \"userId\": \"user-1\",
+                  \"shippingAddress\": {\"zip\": \"12345\", \"line1\": \"line1\", \"line2\": \"line2\"}
+                }
+                """;
+
+        mockMvc.perform(post("/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void create_order_returns_bad_request_when_user_id_blank() throws Exception {
+        String payload = """
+                {
+                  \"userId\": \" \",
+                  \"items\": [{\"productId\": \"prod-1\", \"quantity\": 1, \"unitPrice\": 1000}],
+                  \"shippingAddress\": {\"zip\": \"12345\", \"line1\": \"line1\", \"line2\": \"line2\"}
+                }
+                """;
+
+        mockMvc.perform(post("/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest());
+    }
 }

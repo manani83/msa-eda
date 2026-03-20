@@ -5,6 +5,7 @@ import com.example.hexagonal.adapters.order.in.web.dto.CreateOrderResponse;
 import com.example.hexagonal.application.order.port.in.CreateOrderCommand;
 import com.example.hexagonal.application.order.port.in.CreateOrderResult;
 import com.example.hexagonal.application.order.port.in.CreateOrderUseCase;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,7 +22,7 @@ public class OrderController {
     }
 
     @PostMapping("/orders")
-    public CreateOrderResponse create(@RequestBody CreateOrderRequest request) {
+    public CreateOrderResponse create(@Valid @RequestBody CreateOrderRequest request) {
         CreateOrderCommand.CreateOrderAddress address = new CreateOrderCommand.CreateOrderAddress(
                 request.getShippingAddress().getZip(),
                 request.getShippingAddress().getLine1(),

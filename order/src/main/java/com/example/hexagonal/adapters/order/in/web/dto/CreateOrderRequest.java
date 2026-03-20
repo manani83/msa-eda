@@ -1,11 +1,24 @@
 package com.example.hexagonal.adapters.order.in.web.dto;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public class CreateOrderRequest {
+    @NotBlank
     private String userId;
+
+    @Valid
+    @NotEmpty
     private List<Item> items;
+
+    @Valid
+    @NotNull
     private Address shippingAddress;
+
     private String couponCode;
 
     public CreateOrderRequest() {
@@ -44,8 +57,13 @@ public class CreateOrderRequest {
     }
 
     public static class Item {
+        @NotBlank
         private String productId;
+
+        @Min(1)
         private int quantity;
+
+        @Min(0)
         private long unitPrice;
 
         public Item() {
@@ -77,8 +95,12 @@ public class CreateOrderRequest {
     }
 
     public static class Address {
+        @NotBlank
         private String zip;
+
+        @NotBlank
         private String line1;
+
         private String line2;
 
         public Address() {
