@@ -2,11 +2,16 @@ package com.example.hexagonal.application.order;
 
 import com.example.hexagonal.OrderIntegrationTestApplication;
 import com.example.hexagonal.OrderMySqlTestcontainersConfig;
+import com.example.hexagonal.application.order.port.out.OrderCommandPort;
 import com.example.hexagonal.application.order.port.in.CreateOrderCommand;
 import com.example.hexagonal.application.order.port.in.CreateOrderResult;
 import com.example.hexagonal.application.order.port.in.CreateOrderUseCase;
 import com.example.hexagonal.adapters.order.out.persistence.OrderJpaRepository;
 import com.example.hexagonal.domain.coupon.CouponValidationException;
+import com.example.hexagonal.domain.order.Address;
+import com.example.hexagonal.domain.order.Order;
+import com.example.hexagonal.domain.order.OrderItem;
+import com.example.hexagonal.domain.order.Money;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,6 +20,7 @@ import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -29,6 +35,9 @@ class CreateOrderUseCaseIntegrationTest {
 
     @Autowired
     private OrderJpaRepository orderJpaRepository;
+
+    @Autowired
+    private OrderCommandPort orderCommandPort;
 
     @Test
     void create_order_persists_then_rolls_back() {
@@ -97,5 +106,22 @@ class CreateOrderUseCaseIntegrationTest {
         assertThatThrownBy(() -> createOrderUseCase.create(command))
                 .isInstanceOf(CouponValidationException.class)
                 .hasMessageContaining("Order amount below minimum");
+    }
+
+    @Test
+    void save_order_preserves_created_at_from_domain() {
+        Instant createdAt = Instant.parse("2026-03-20T00:00:00Z");
+        Order order = Order.create(
+                "user-1",
+                List.of(new OrderItem("prod-1", 1, Money.of(1000))),
+                new Address("12345", "line1", "line2"),
+                null,
+                createdAt
+        );
+
+        Order saved = orderCommandPort.save(order);
+
+        assertThat(saved.getCreatedAt()).isEqualTo(createdAt);
+        assertThat(saved.getOrderId()).startsWith("20260320");
     }
 }

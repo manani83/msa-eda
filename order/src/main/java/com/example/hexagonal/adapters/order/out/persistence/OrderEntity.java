@@ -5,7 +5,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
@@ -55,13 +54,6 @@ public class OrderEntity {
     public void addItem(OrderItemEntity item) {
         items.add(item);
         item.setOrder(this);
-    }
-
-    @PrePersist
-    private void onCreate() {
-        if (createdAt == null) {
-            createdAt = Instant.now();
-        }
     }
 
     public String getOrderId() {
@@ -114,6 +106,10 @@ public class OrderEntity {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
     }
 
     public String getShippingZip() {
