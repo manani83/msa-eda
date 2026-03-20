@@ -1,6 +1,14 @@
 package com.example.hexagonal.application.order.port.in;
 
+import com.example.hexagonal.domain.coupon.Coupon;
+import com.example.hexagonal.domain.order.Address;
+import com.example.hexagonal.domain.order.Money;
+import com.example.hexagonal.domain.order.Order;
+import com.example.hexagonal.domain.order.OrderItem;
+
+import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class CreateOrderCommand {
     private final String userId;
@@ -34,6 +42,18 @@ public class CreateOrderCommand {
         return couponCode;
     }
 
+    public Order toOrder(Coupon coupon, Instant createdAt) {
+        return Order.create(
+                userId,
+                items.stream()
+                        .map(CreateOrderItem::toDomain)
+                        .collect(Collectors.toList()),
+                shippingAddress.toDomain(),
+                coupon,
+                createdAt
+        );
+    }
+
     public static class CreateOrderItem {
         private final String productId;
         private final int quantity;
@@ -55,6 +75,10 @@ public class CreateOrderCommand {
 
         public long getUnitPrice() {
             return unitPrice;
+        }
+
+        private OrderItem toDomain() {
+            return new OrderItem(productId, quantity, Money.of(unitPrice));
         }
     }
 
@@ -79,6 +103,10 @@ public class CreateOrderCommand {
 
         public String getLine2() {
             return line2;
+        }
+
+        private Address toDomain() {
+            return new Address(zip, line1, line2);
         }
     }
 }

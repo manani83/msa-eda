@@ -1,11 +1,13 @@
 package com.example.hexagonal.adapters.order.in.web.dto;
 
+import com.example.hexagonal.application.order.port.in.CreateOrderCommand;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class CreateOrderRequest {
     @NotBlank
@@ -56,6 +58,17 @@ public class CreateOrderRequest {
         this.couponCode = couponCode;
     }
 
+    public CreateOrderCommand toCommand() {
+        return new CreateOrderCommand(
+                userId,
+                items.stream()
+                        .map(Item::toCommandItem)
+                        .collect(Collectors.toList()),
+                shippingAddress.toCommandAddress(),
+                couponCode
+        );
+    }
+
     public static class Item {
         @NotBlank
         private String productId;
@@ -91,6 +104,10 @@ public class CreateOrderRequest {
 
         public void setUnitPrice(long unitPrice) {
             this.unitPrice = unitPrice;
+        }
+
+        CreateOrderCommand.CreateOrderItem toCommandItem() {
+            return new CreateOrderCommand.CreateOrderItem(productId, quantity, unitPrice);
         }
     }
 
@@ -128,6 +145,10 @@ public class CreateOrderRequest {
 
         public void setLine2(String line2) {
             this.line2 = line2;
+        }
+
+        CreateOrderCommand.CreateOrderAddress toCommandAddress() {
+            return new CreateOrderCommand.CreateOrderAddress(zip, line1, line2);
         }
     }
 }
