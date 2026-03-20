@@ -7,7 +7,6 @@ import com.example.hexagonal.domain.order.Order;
 import com.example.hexagonal.domain.order.OrderItem;
 import com.example.hexagonal.domain.order.OrderStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -28,7 +27,6 @@ public class OrderPersistenceAdapter implements OrderCommandPort {
     }
 
     @Override
-    @Transactional
     public Order save(Order order) {
         OrderEntity entity = toEntity(order);
         OrderEntity saved = repository.save(entity);

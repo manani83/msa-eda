@@ -12,6 +12,7 @@ import com.example.hexagonal.domain.order.Money;
 import com.example.hexagonal.domain.order.Order;
 import com.example.hexagonal.domain.order.OrderItem;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -28,6 +29,7 @@ public class CreateOrderService implements CreateOrderUseCase {
     }
 
     @Override
+    @Transactional
     public CreateOrderResult create(CreateOrderCommand command) {
         Instant now = Instant.now();
         Address address = new Address(
