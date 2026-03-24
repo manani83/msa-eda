@@ -62,15 +62,41 @@ public class Order {
                                Address shippingAddress,
                                Coupon coupon,
                                Instant createdAt) {
-        Money subtotal = Money.of(0);
-        for (OrderItem item : items) {
-            subtotal = subtotal.add(item.lineTotal());
-        }
+        Money subtotal = subtotalOf(items);
         long discount = coupon == null ? 0 : coupon.calculateDiscount(subtotal.getAmount(), createdAt);
         Money discountAmount = Money.of(discount);
         Money total = Money.of(subtotal.getAmount() - discount);
         String couponCode = coupon == null ? null : coupon.getCode();
-        return new Order(null, userId, items, shippingAddress, OrderStatus.CREATED, couponCode, discountAmount, total, createdAt);
+        return new Order(
+                null,
+                userId,
+                items,
+                shippingAddress,
+                OrderStatus.BENEFITS_COMPLETED,
+                couponCode,
+                discountAmount,
+                total,
+                createdAt
+        );
+    }
+
+    public static Order createPendingBenefits(String userId,
+                                              List<OrderItem> items,
+                                              Address shippingAddress,
+                                              String couponCode,
+                                              Instant createdAt) {
+        Money subtotal = subtotalOf(items);
+        return new Order(
+                null,
+                userId,
+                items,
+                shippingAddress,
+                OrderStatus.PENDING_BENEFITS,
+                couponCode,
+                Money.of(0),
+                subtotal,
+                createdAt
+        );
     }
 
     public static Order rehydrate(String id,
@@ -123,5 +149,13 @@ public class Order {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    private static Money subtotalOf(List<OrderItem> items) {
+        Money subtotal = Money.of(0);
+        for (OrderItem item : items) {
+            subtotal = subtotal.add(item.lineTotal());
+        }
+        return subtotal;
     }
 }

@@ -9,6 +9,9 @@
 - 쿠폰 조회, 할인 계산, 주문 저장이 한 유스케이스 안에서 처리된다.
 - 주문번호는 저장 시점에 생성된다.
 - 쿠폰/적립금은 아직 Kafka 기반 비동기 처리로 분리되지 않았다.
+- 주문 상태 모델은 EDA 전환을 고려해 확장되었다.
+  - 현재 동기 주문 생성 결과 상태는 `BENEFITS_COMPLETED`
+  - 향후 비동기 전환용 초기 상태로 `PENDING_BENEFITS` 팩토리가 준비되어 있다.
 
 ## 오늘 반영된 코드 변경
 - 입력 검증 추가
@@ -25,6 +28,13 @@
   - `CreateOrderRequest#toCommand()` 추가
   - `CreateOrderCommand#toOrder(...)` 추가
   - 컨트롤러/서비스의 수작업 매핑 제거
+
+## 2026-03-24 추가 반영
+- 주문 상태 모델 재설계
+  - `OrderStatus`를 `PENDING_BENEFITS`, `BENEFITS_COMPLETED`, `BENEFITS_FAILED`, `PARTIAL_FAILED` 중심으로 확장
+  - 현재 동기 흐름의 `Order.create(...)`는 `BENEFITS_COMPLETED`로 저장되도록 조정
+  - 향후 EDA 시작점에서 사용할 `Order.createPendingBenefits(...)` 추가
+  - 도메인/통합 테스트로 상태 변경 방향 검증
 
 ## 현재 구조 기준 목표 흐름도
 
@@ -187,21 +197,19 @@ order
 - outbox 발행 방식을 polling으로 할지 CDC로 할지
 
 ## 다음에 바로 진행할 추천 순서
-1. 주문 상태 모델 재설계
-   - `PENDING_BENEFITS`, `BENEFITS_COMPLETED`, `BENEFITS_FAILED`, `PARTIAL_FAILED`
-2. 이벤트 스키마 정의
+1. 이벤트 스키마 정의
    - `OrderCreatedEvent`
    - `CouponAppliedEvent`
    - `CouponRejectedEvent`
    - `PointReservedEvent`
    - `PointFailedEvent`
-3. Outbox 테이블/엔티티/포트 설계
-4. `CreateOrderBiz` 도입
+2. Outbox 테이블/엔티티/포트 설계
+3. `CreateOrderBiz` 도입
    - 주문 저장 + outbox 적재까지 동기 처리
-5. Kafka publisher 추가
-6. Coupon/Point consumer 추가
-7. 주문 결과 집계 핸들러 추가
-8. 마지막에 현재의 직접 쿠폰 조회 의존 제거
+4. Kafka publisher 추가
+5. Coupon/Point consumer 추가
+6. 주문 결과 집계 핸들러 추가
+7. 마지막에 현재의 직접 쿠폰 조회 의존 제거
 
 ## 다음 세션에서 바로 사용할 요청 예시
 - `docs/ai/codex/handoff/order-eda-plan.md 기준으로 다음 단계 진행해줘`

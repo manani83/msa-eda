@@ -25,7 +25,7 @@ public class OrderController {
 
         return new CreateOrderResponse(
                 result.getOrderId(),
-                result.getStatus().name(),
+                result.getStatus().getCode(),
                 result.getCouponCode(),
                 result.getDiscountAmount(),
                 result.getTotalAmount(),

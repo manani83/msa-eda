@@ -12,6 +12,7 @@ import com.example.hexagonal.domain.order.Address;
 import com.example.hexagonal.domain.order.Order;
 import com.example.hexagonal.domain.order.OrderItem;
 import com.example.hexagonal.domain.order.Money;
+import com.example.hexagonal.domain.order.OrderStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -54,6 +55,7 @@ class CreateOrderUseCaseIntegrationTest {
         boolean existsBeforeRollback = orderJpaRepository.findById(result.getOrderId()).isPresent();
         System.out.println("Exists before rollback=" + existsBeforeRollback);
         assertThat(existsBeforeRollback).isTrue();
+        assertThat(result.getStatus()).isEqualTo(OrderStatus.BENEFITS_COMPLETED);
 
         TestTransaction.flagForRollback();
         TestTransaction.end();
@@ -75,6 +77,7 @@ class CreateOrderUseCaseIntegrationTest {
 
         CreateOrderResult result = createOrderUseCase.create(command);
 
+        assertThat(result.getStatus()).isEqualTo(OrderStatus.BENEFITS_COMPLETED);
         assertThat(result.getCouponCode()).isEqualTo("WELCOME10");
         assertThat(result.getDiscountAmount()).isEqualTo(200);
         assertThat(result.getTotalAmount()).isEqualTo(1800);
