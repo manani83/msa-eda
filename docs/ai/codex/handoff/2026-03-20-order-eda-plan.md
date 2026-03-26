@@ -35,6 +35,13 @@
   - 현재 동기 흐름의 `Order.create(...)`는 `BENEFITS_COMPLETED`로 저장되도록 조정
   - 향후 EDA 시작점에서 사용할 `Order.createPendingBenefits(...)` 추가
   - 도메인/통합 테스트로 상태 변경 방향 검증
+- 이벤트 스키마 정의
+  - `application.event.common`, `application.event.order`, `application.event.coupon`, `application.event.point`로 경계 분리
+  - `EventEnvelope<T>` 공통 이벤트 envelope 추가
+  - 주문은 `order`, 쿠폰은 `coupon`, 포인트는 `point` 패키지로 분리
+  - `CouponFailureReason`, `PointFailureReason`, result code enum 추가
+  - `OrderEventTopics`로 topic 이름과 message key 규칙 정리
+  - 단위 테스트로 envelope/payload/topic 상수 검증
 
 ## 현재 구조 기준 목표 흐름도
 
@@ -176,8 +183,12 @@ order
    │        ├─ persistence
    │        └─ message
    ├─ application
+   │  ├─ event
+   │  │  ├─ common
+   │  │  ├─ order
+   │  │  ├─ coupon
+   │  │  └─ point
    │  └─ order
-   │     ├─ event
    │     ├─ port
    │     │  ├─ in
    │     │  └─ out
@@ -197,24 +208,18 @@ order
 - outbox 발행 방식을 polling으로 할지 CDC로 할지
 
 ## 다음에 바로 진행할 추천 순서
-1. 이벤트 스키마 정의
-   - `OrderCreatedEvent`
-   - `CouponAppliedEvent`
-   - `CouponRejectedEvent`
-   - `PointReservedEvent`
-   - `PointFailedEvent`
-2. Outbox 테이블/엔티티/포트 설계
-3. `CreateOrderBiz` 도입
+1. Outbox 테이블/엔티티/포트 설계
+2. `CreateOrderBiz` 도입
    - 주문 저장 + outbox 적재까지 동기 처리
-4. Kafka publisher 추가
-5. Coupon/Point consumer 추가
-6. 주문 결과 집계 핸들러 추가
-7. 마지막에 현재의 직접 쿠폰 조회 의존 제거
+3. Kafka publisher 추가
+4. Coupon/Point consumer 추가
+5. 주문 결과 집계 핸들러 추가
+6. 마지막에 현재의 직접 쿠폰 조회 의존 제거
 
 ## 다음 세션에서 바로 사용할 요청 예시
-- `docs/ai/codex/handoff/order-eda-plan.md 기준으로 다음 단계 진행해줘`
-- `handoff 문서 기준으로 1번 주문 상태 모델 설계부터 해줘`
-- `order-eda-plan.md 읽고 outbox 설계부터 구현해줘`
+- `docs/ai/codex/handoff/2026-03-20-order-eda-plan.md 기준으로 다음 단계 진행해줘`
+- `handoff 문서 기준으로 outbox 설계부터 해줘`
+- `2026-03-20-order-eda-plan.md 읽고 CreateOrderBiz 도입부터 구현해줘`
 - `현재 handoff 문서 기준으로 EDA 전환 작업 이어서 진행해줘`
 
 ## 참고 문서

@@ -26,7 +26,7 @@ public class CouponPersistenceAdapter implements CouponQueryPort {
     private Coupon toDomain(CouponEntity entity) {
         return new Coupon(
                 entity.getCode(),
-                DiscountType.valueOf(entity.getDiscountType()),
+                DiscountType.fromCode(entity.getDiscountType()),
                 entity.getDiscountValue(),
                 entity.getMinOrderAmount(),
                 entity.getValidFrom(),
