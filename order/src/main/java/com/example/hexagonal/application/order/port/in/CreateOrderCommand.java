@@ -1,6 +1,5 @@
 package com.example.hexagonal.application.order.port.in;
 
-import com.example.hexagonal.domain.coupon.Coupon;
 import com.example.hexagonal.domain.order.Address;
 import com.example.hexagonal.domain.order.Money;
 import com.example.hexagonal.domain.order.Order;
@@ -42,14 +41,14 @@ public class CreateOrderCommand {
         return couponCode;
     }
 
-    public Order toOrder(Coupon coupon, Instant createdAt) {
-        return Order.create(
+    public Order toPendingOrder(Instant createdAt) {
+        return Order.createPendingBenefits(
                 userId,
                 items.stream()
                         .map(CreateOrderItem::toDomain)
                         .collect(Collectors.toList()),
                 shippingAddress.toDomain(),
-                coupon,
+                couponCode,
                 createdAt
         );
     }
