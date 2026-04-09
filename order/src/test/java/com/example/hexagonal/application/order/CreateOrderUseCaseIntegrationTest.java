@@ -2,6 +2,8 @@ package com.example.hexagonal.application.order;
 
 import com.example.hexagonal.OrderIntegrationTestApplication;
 import com.example.hexagonal.OrderMySqlTestcontainersConfig;
+import com.example.hexagonal.adapters.order.out.persistence.OrderBenefitSagaEntity;
+import com.example.hexagonal.adapters.order.out.persistence.OrderBenefitSagaJpaRepository;
 import com.example.hexagonal.application.order.port.in.CreateOrderCommand;
 import com.example.hexagonal.application.order.port.in.CreateOrderResult;
 import com.example.hexagonal.application.order.port.out.OrderCommandPort;
@@ -44,12 +46,16 @@ class CreateOrderUseCaseIntegrationTest {
     @Autowired
     private OrderOutboxJpaRepository orderOutboxJpaRepository;
 
+    @Autowired
+    private OrderBenefitSagaJpaRepository orderBenefitSagaJpaRepository;
+
     @Test
-    void create_order_persists_order_and_outbox_then_rolls_back() {
+    void create_order_with_coupon_request_persists_order_saga_and_outbox_then_rolls_back() {
         CreateOrderCommand command = new CreateOrderCommand(
                 "user-1",
                 List.of(new CreateOrderCommand.CreateOrderItem("prod-1", 2, 1000)),
                 new CreateOrderCommand.CreateOrderAddress("12345", "line1", "line2"),
+                "WELCOME10",
                 null
         );
 
@@ -59,11 +65,14 @@ class CreateOrderUseCaseIntegrationTest {
         boolean existsBeforeRollback = orderJpaRepository.findById(result.getOrderId()).isPresent();
         OrderOutboxEntity outboxBeforeRollback = orderOutboxJpaRepository.findFirstByAggregateId(result.getOrderId())
                 .orElseThrow();
+        OrderBenefitSagaEntity sagaBeforeRollback = orderBenefitSagaJpaRepository.findByOrderId(result.getOrderId())
+                .orElseThrow();
         System.out.println("Exists before rollback=" + existsBeforeRollback);
         assertThat(existsBeforeRollback).isTrue();
         assertThat(result.getStatus()).isEqualTo(OrderStatus.PENDING_BENEFITS);
-        assertThat(outboxBeforeRollback.getTopic()).isEqualTo(OrderEventTopics.ORDER_CREATED_V1);
+        assertThat(outboxBeforeRollback.getTopic()).isEqualTo(OrderEventTopics.COUPON_APPLY_COMMAND_V1);
         assertThat(outboxBeforeRollback.getStatus()).isEqualTo(OutboxStatus.PENDING.getCode());
+        assertThat(sagaBeforeRollback.getCurrentStep()).isEqualTo(OrderSagaStep.WAITING_COUPON_RESULT.getCode());
 
         TestTransaction.flagForRollback();
         TestTransaction.end();
@@ -73,15 +82,17 @@ class CreateOrderUseCaseIntegrationTest {
         System.out.println("Exists after rollback=" + existsAfterRollback);
         assertThat(existsAfterRollback).isFalse();
         assertThat(orderOutboxJpaRepository.findFirstByAggregateId(result.getOrderId())).isEmpty();
+        assertThat(orderBenefitSagaJpaRepository.findByOrderId(result.getOrderId())).isEmpty();
     }
 
     @Test
-    void create_order_returns_pending_benefits_and_stores_order_created_event() {
+    void create_order_with_coupon_request_returns_pending_benefits_and_stores_coupon_apply_command() {
         CreateOrderCommand command = new CreateOrderCommand(
                 "user-1",
                 List.of(new CreateOrderCommand.CreateOrderItem("prod-1", 2, 1000)),
                 new CreateOrderCommand.CreateOrderAddress("12345", "line1", "line2"),
-                "WELCOME10"
+                "WELCOME10",
+                null
         );
 
         CreateOrderResult result = createOrderBiz.create(command);
@@ -92,9 +103,56 @@ class CreateOrderUseCaseIntegrationTest {
         assertThat(result.getCouponCode()).isEqualTo("WELCOME10");
         assertThat(result.getDiscountAmount()).isEqualTo(0);
         assertThat(result.getTotalAmount()).isEqualTo(2000);
-        assertThat(outbox.getEventType()).isEqualTo("order.created");
-        assertThat(outbox.getPayloadJson()).contains("\"orderStatusCode\":\"PENDING_BENEFITS\"");
+        assertThat(outbox.getEventType()).isEqualTo("coupon.apply.command");
         assertThat(outbox.getPayloadJson()).contains("\"couponCode\":\"WELCOME10\"");
+        assertThat(outbox.getPayloadJson()).contains("\"subtotalAmount\":2000");
+    }
+
+    @Test
+    void create_order_with_point_request_stores_point_reserve_command() {
+        CreateOrderCommand command = new CreateOrderCommand(
+                "user-1",
+                List.of(new CreateOrderCommand.CreateOrderItem("prod-1", 2, 1000)),
+                new CreateOrderCommand.CreateOrderAddress("12345", "line1", "line2"),
+                null,
+                300L
+        );
+
+        CreateOrderResult result = createOrderBiz.create(command);
+        OrderOutboxEntity outbox = orderOutboxJpaRepository.findFirstByAggregateId(result.getOrderId())
+                .orElseThrow();
+        OrderBenefitSagaEntity saga = orderBenefitSagaJpaRepository.findByOrderId(result.getOrderId())
+                .orElseThrow();
+
+        assertThat(result.getStatus()).isEqualTo(OrderStatus.PENDING_BENEFITS);
+        assertThat(result.getCouponCode()).isNull();
+        assertThat(result.getDiscountAmount()).isEqualTo(0);
+        assertThat(result.getTotalAmount()).isEqualTo(2000);
+        assertThat(outbox.getTopic()).isEqualTo(OrderEventTopics.POINT_RESERVE_COMMAND_V1);
+        assertThat(outbox.getEventType()).isEqualTo("point.reserve.command");
+        assertThat(outbox.getPayloadJson()).contains("\"requestedPointAmount\":300");
+        assertThat(saga.getCurrentStep()).isEqualTo(OrderSagaStep.WAITING_POINT_RESULT.getCode());
+    }
+
+    @Test
+    void create_order_without_benefit_request_completes_immediately() {
+        CreateOrderCommand command = new CreateOrderCommand(
+                "user-1",
+                List.of(new CreateOrderCommand.CreateOrderItem("prod-1", 2, 1000)),
+                new CreateOrderCommand.CreateOrderAddress("12345", "line1", "line2"),
+                null,
+                null
+        );
+
+        CreateOrderResult result = createOrderBiz.create(command);
+        OrderBenefitSagaEntity saga = orderBenefitSagaJpaRepository.findByOrderId(result.getOrderId())
+                .orElseThrow();
+
+        assertThat(result.getStatus()).isEqualTo(OrderStatus.BENEFITS_COMPLETED);
+        assertThat(result.getDiscountAmount()).isEqualTo(0);
+        assertThat(result.getTotalAmount()).isEqualTo(2000);
+        assertThat(orderOutboxJpaRepository.findFirstByAggregateId(result.getOrderId())).isEmpty();
+        assertThat(saga.getCurrentStep()).isEqualTo(OrderSagaStep.COMPLETED.getCode());
     }
 
     @Test
@@ -103,15 +161,20 @@ class CreateOrderUseCaseIntegrationTest {
                 "user-1",
                 List.of(new CreateOrderCommand.CreateOrderItem("prod-1", 1, 1000)),
                 new CreateOrderCommand.CreateOrderAddress("12345", "line1", "line2"),
-                "NOPE"
+                "NOPE",
+                null
         );
 
         CreateOrderResult result = createOrderBiz.create(command);
+        OrderOutboxEntity outbox = orderOutboxJpaRepository.findFirstByAggregateId(result.getOrderId())
+                .orElseThrow();
 
         assertThat(result.getStatus()).isEqualTo(OrderStatus.PENDING_BENEFITS);
         assertThat(result.getCouponCode()).isEqualTo("NOPE");
         assertThat(result.getDiscountAmount()).isEqualTo(0);
         assertThat(result.getTotalAmount()).isEqualTo(1000);
+        assertThat(outbox.getTopic()).isEqualTo(OrderEventTopics.COUPON_APPLY_COMMAND_V1);
+        assertThat(outbox.getPayloadJson()).contains("\"couponCode\":\"NOPE\"");
     }
 
     @Test

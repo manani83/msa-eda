@@ -1,6 +1,7 @@
 package com.example.hexagonal.adapters.order.out.persistence;
 
 import com.example.hexagonal.application.order.port.out.OrderCommandPort;
+import com.example.hexagonal.application.order.port.out.OrderQueryPort;
 import com.example.hexagonal.domain.order.Address;
 import com.example.hexagonal.domain.order.Money;
 import com.example.hexagonal.domain.order.Order;
@@ -13,10 +14,11 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
-public class OrderPersistenceAdapter implements OrderCommandPort {
+public class OrderPersistenceAdapter implements OrderCommandPort, OrderQueryPort {
     private static final ZoneId ORDER_ID_ZONE = ZoneId.of("Asia/Seoul");
     private final OrderJpaRepository repository;
     private final OrderSequenceJpaRepository sequenceRepository;
@@ -31,6 +33,12 @@ public class OrderPersistenceAdapter implements OrderCommandPort {
         OrderEntity entity = toEntity(order);
         OrderEntity saved = repository.save(entity);
         return toDomain(saved);
+    }
+
+    @Override
+    public Optional<Order> findById(String orderId) {
+        return repository.findById(orderId)
+                .map(this::toDomain);
     }
 
     private OrderEntity toEntity(Order order) {

@@ -139,6 +139,11 @@ public class Order {
         return couponCode;
     }
 
+    // 상품 합계를 기준으로 현재 주문의 원래 금액을 계산한다.
+    public long subtotalAmount() {
+        return subtotalOf(items).getAmount();
+    }
+
     public Money getDiscountAmount() {
         return discountAmount;
     }
@@ -149,6 +154,52 @@ public class Order {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    // 혜택 처리가 모두 끝난 주문 상태로 전환한다.
+    public Order completeBenefits() {
+        return new Order(orderId, userId, items, shippingAddress, OrderStatus.BENEFITS_COMPLETED, couponCode, discountAmount, totalAmount, createdAt);
+    }
+
+    // 쿠폰 할인 결과를 반영해 주문 금액과 상태를 갱신한다.
+    public Order applyCouponDiscount(long couponDiscountAmount, boolean keepPending) {
+        long subtotal = subtotalAmount();
+        return new Order(
+                orderId,
+                userId,
+                items,
+                shippingAddress,
+                keepPending ? OrderStatus.PENDING_BENEFITS : OrderStatus.BENEFITS_COMPLETED,
+                couponCode,
+                Money.of(couponDiscountAmount),
+                Money.of(subtotal - couponDiscountAmount),
+                createdAt
+        );
+    }
+
+    // 포인트 예약 결과를 반영해 최종 할인 금액과 결제 금액을 갱신한다.
+    public Order applyPointReservation(long reservedPointAmount) {
+        return new Order(
+                orderId,
+                userId,
+                items,
+                shippingAddress,
+                OrderStatus.BENEFITS_COMPLETED,
+                couponCode,
+                Money.of(discountAmount.getAmount() + reservedPointAmount),
+                Money.of(totalAmount.getAmount() - reservedPointAmount),
+                createdAt
+        );
+    }
+
+    // 혜택 처리 전체 실패 상태로 전환한다.
+    public Order markBenefitsFailed() {
+        return new Order(orderId, userId, items, shippingAddress, OrderStatus.BENEFITS_FAILED, couponCode, discountAmount, totalAmount, createdAt);
+    }
+
+    // 일부 혜택만 적용된 실패 상태로 전환한다.
+    public Order markPartialFailed() {
+        return new Order(orderId, userId, items, shippingAddress, OrderStatus.PARTIAL_FAILED, couponCode, discountAmount, totalAmount, createdAt);
     }
 
     private static Money subtotalOf(List<OrderItem> items) {

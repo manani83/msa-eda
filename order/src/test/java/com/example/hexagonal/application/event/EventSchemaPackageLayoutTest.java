@@ -1,11 +1,13 @@
 package com.example.hexagonal.application.event;
 
 import com.example.hexagonal.application.event.common.EventEnvelope;
+import com.example.hexagonal.application.event.coupon.CouponApplyCommandEvent;
 import com.example.hexagonal.application.event.coupon.CouponFailureReason;
 import com.example.hexagonal.application.event.coupon.CouponResultCode;
 import com.example.hexagonal.application.event.order.OrderCreatedEvent;
 import com.example.hexagonal.application.event.order.OrderEventTopics;
 import com.example.hexagonal.application.event.point.PointFailureReason;
+import com.example.hexagonal.application.event.point.PointReserveCommandEvent;
 import com.example.hexagonal.application.event.point.PointResultCode;
 
 import org.junit.jupiter.api.Test;
@@ -53,9 +55,36 @@ class EventSchemaPackageLayoutTest {
     @Test
     void orderEventTopics_whenUsingOrderId_thenMessageKeyMatchesOrderId() {
         assertThat(OrderEventTopics.ORDER_CREATED_V1).isEqualTo("order.created.v1");
-        assertThat(OrderEventTopics.COUPON_RESULT_V1).isEqualTo("coupon.result.v1");
-        assertThat(OrderEventTopics.POINT_RESULT_V1).isEqualTo("point.result.v1");
+        assertThat(OrderEventTopics.COUPON_APPLY_COMMAND_V1).isEqualTo("coupon.apply.command.v1");
+        assertThat(OrderEventTopics.COUPON_APPLY_RESULT_V1).isEqualTo("coupon.apply.result.v1");
+        assertThat(OrderEventTopics.POINT_RESERVE_COMMAND_V1).isEqualTo("point.reserve.command.v1");
+        assertThat(OrderEventTopics.POINT_RESERVE_RESULT_V1).isEqualTo("point.reserve.result.v1");
         assertThat(OrderEventTopics.messageKey("20260324000001")).isEqualTo("20260324000001");
+    }
+
+    @Test
+    void commandEvents_shouldCarryOrchestrationPayload() {
+        CouponApplyCommandEvent couponCommand = new CouponApplyCommandEvent(
+                "20260324000001",
+                "benefit-20260324000001",
+                "user-1",
+                "WELCOME10",
+                20000L,
+                Instant.parse("2026-03-24T14:00:00Z")
+        );
+        PointReserveCommandEvent pointCommand = new PointReserveCommandEvent(
+                "20260324000001",
+                "benefit-20260324000001",
+                "user-1",
+                3000L,
+                18000L,
+                Instant.parse("2026-03-24T14:00:01Z")
+        );
+
+        assertThat(couponCommand.couponCode()).isEqualTo("WELCOME10");
+        assertThat(couponCommand.subtotalAmount()).isEqualTo(20000L);
+        assertThat(pointCommand.requestedPointAmount()).isEqualTo(3000L);
+        assertThat(pointCommand.payableAmount()).isEqualTo(18000L);
     }
 
     @Test

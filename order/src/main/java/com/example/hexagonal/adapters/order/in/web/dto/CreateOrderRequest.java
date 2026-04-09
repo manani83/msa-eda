@@ -23,6 +23,9 @@ public class CreateOrderRequest {
 
     private String couponCode;
 
+    @Min(0)
+    private Long pointAmount;
+
     public CreateOrderRequest() {
     }
 
@@ -58,6 +61,14 @@ public class CreateOrderRequest {
         this.couponCode = couponCode;
     }
 
+    public Long getPointAmount() {
+        return pointAmount;
+    }
+
+    public void setPointAmount(Long pointAmount) {
+        this.pointAmount = pointAmount;
+    }
+
     public CreateOrderCommand toCommand() {
         return new CreateOrderCommand(
                 userId,
@@ -65,7 +76,8 @@ public class CreateOrderRequest {
                         .map(Item::toCommandItem)
                         .collect(Collectors.toList()),
                 shippingAddress.toCommandAddress(),
-                couponCode
+                couponCode,
+                pointAmount
         );
     }
 

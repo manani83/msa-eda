@@ -14,15 +14,18 @@ public class CreateOrderCommand {
     private final List<CreateOrderItem> items;
     private final CreateOrderAddress shippingAddress;
     private final String couponCode;
+    private final Long pointAmount;
 
     public CreateOrderCommand(String userId,
                               List<CreateOrderItem> items,
                               CreateOrderAddress shippingAddress,
-                              String couponCode) {
+                              String couponCode,
+                              Long pointAmount) {
         this.userId = userId;
         this.items = items;
         this.shippingAddress = shippingAddress;
         this.couponCode = couponCode;
+        this.pointAmount = pointAmount;
     }
 
     public String getUserId() {
@@ -41,6 +44,26 @@ public class CreateOrderCommand {
         return couponCode;
     }
 
+    public Long getPointAmount() {
+        return pointAmount;
+    }
+
+    // null 입력을 0으로 보정해 포인트 요청 금액을 반환한다.
+    public long getRequestedPointAmount() {
+        return pointAmount == null ? 0L : pointAmount;
+    }
+
+    // 쿠폰 처리가 필요한 요청인지 판단한다.
+    public boolean hasCouponRequest() {
+        return couponCode != null && !couponCode.isBlank();
+    }
+
+    // 포인트 처리가 필요한 요청인지 판단한다.
+    public boolean hasPointRequest() {
+        return getRequestedPointAmount() > 0;
+    }
+
+    // 요청 데이터를 혜택 처리 대기 상태의 주문으로 변환한다.
     public Order toPendingOrder(Instant createdAt) {
         return Order.createPendingBenefits(
                 userId,

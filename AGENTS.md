@@ -21,3 +21,5 @@
 - 포맷: ./gradlew spotlessApply
 - 정적분석/테스트: ./gradlew test
 - (MyBatis) 필요한 경우: ./gradlew :module-name:test
+## 프롬프트
+- 요청이 명확하지 않을때 제대로 이해했는지 이해한 내용을 바탕으로 설명해서 제대로 이해한게 맞는지 확인 반드시 필요
