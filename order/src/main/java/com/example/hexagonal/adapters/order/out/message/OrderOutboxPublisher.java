@@ -41,6 +41,15 @@ public class OrderOutboxPublisher {
     private void publish(OutboxRecord outboxRecord) {
         Instant now = Instant.now();
         try {
+            log.info(
+                    "Kafka send topic={} key={} eventType={} correlationId={} aggregateId={} payload={}",
+                    outboxRecord.topic(),
+                    outboxRecord.messageKey(),
+                    outboxRecord.eventType(),
+                    outboxRecord.correlationId(),
+                    outboxRecord.aggregateId(),
+                    outboxRecord.payloadJson()
+            );
             kafkaTemplate.send(
                     outboxRecord.topic(),
                     outboxRecord.messageKey(),

@@ -7,6 +7,8 @@ import com.example.hexagonal.application.event.order.OrderEventTopics;
 import com.example.hexagonal.application.order.OrderSagaOrchestrator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
@@ -17,6 +19,7 @@ import java.time.Instant;
 @Component
 @ConditionalOnProperty(name = "order.saga.listener.enabled", havingValue = "true")
 public class CouponResultKafkaListener {
+    private static final Logger log = LoggerFactory.getLogger(CouponResultKafkaListener.class);
     private final OrderSagaOrchestrator orderSagaOrchestrator;
     private final ObjectMapper objectMapper;
 
@@ -34,11 +37,29 @@ public class CouponResultKafkaListener {
         JsonNode root = objectMapper.readTree(message);
         String eventType = text(root, "eventType");
         if ("coupon.applied".equals(eventType)) {
-            orderSagaOrchestrator.handleCouponApplied(envelope(root, CouponAppliedEvent.class));
+            EventEnvelope<CouponAppliedEvent> envelope = envelope(root, CouponAppliedEvent.class);
+            log.info(
+                    "Kafka receive topic={} eventType={} correlationId={} traceId={} payload={}",
+                    OrderEventTopics.COUPON_APPLY_RESULT_V1,
+                    envelope.eventType(),
+                    envelope.correlationId(),
+                    envelope.traceId(),
+                    envelope.payload()
+            );
+            orderSagaOrchestrator.handleCouponApplied(envelope);
             return;
         }
         if ("coupon.rejected".equals(eventType)) {
-            orderSagaOrchestrator.handleCouponRejected(envelope(root, CouponRejectedEvent.class));
+            EventEnvelope<CouponRejectedEvent> envelope = envelope(root, CouponRejectedEvent.class);
+            log.info(
+                    "Kafka receive topic={} eventType={} correlationId={} traceId={} payload={}",
+                    OrderEventTopics.COUPON_APPLY_RESULT_V1,
+                    envelope.eventType(),
+                    envelope.correlationId(),
+                    envelope.traceId(),
+                    envelope.payload()
+            );
+            orderSagaOrchestrator.handleCouponRejected(envelope);
             return;
         }
         throw new IllegalArgumentException("Unsupported coupon event type: " + eventType);

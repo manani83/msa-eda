@@ -1,9 +1,18 @@
 spring:
   jpa:
+    show-sql: false
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
     defer-datasource-initialization: true
   sql:
     init:
       mode: always
       data-locations: classpath:/data-test.sql
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.orm.jdbc.bind: TRACE

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 
-docker compose stop mysql
+docker compose -f docker-compose.mysql.yml down
 
 echo "MySQL stopped."

@@ -9,6 +9,8 @@ import com.example.hexagonal.application.event.point.PointResultCode;
 import com.example.hexagonal.point.application.port.out.PointResultPublishPort;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +22,7 @@ import java.util.UUID;
  */
 @Component
 public class PointResultKafkaPublisher implements PointResultPublishPort {
+    private static final Logger log = LoggerFactory.getLogger(PointResultKafkaPublisher.class);
     private static final String PRODUCER = "point-service";
     private static final String AGGREGATE_TYPE = "order";
     private static final int SCHEMA_VERSION = 1;
@@ -81,10 +84,20 @@ public class PointResultKafkaPublisher implements PointResultPublishPort {
      */
     private void publish(String orderId, EventEnvelope<?> envelope) {
         try {
+            String message = objectMapper.writeValueAsString(envelope);
+            log.info(
+                    "Kafka send topic={} key={} eventType={} correlationId={} traceId={} payload={}",
+                    OrderEventTopics.POINT_RESERVE_RESULT_V1,
+                    OrderEventTopics.messageKey(orderId),
+                    envelope.eventType(),
+                    envelope.correlationId(),
+                    envelope.traceId(),
+                    message
+            );
             kafkaTemplate.send(
                     OrderEventTopics.POINT_RESERVE_RESULT_V1,
                     OrderEventTopics.messageKey(orderId),
-                    objectMapper.writeValueAsString(envelope)
+                    message
             );
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize point result event", exception);

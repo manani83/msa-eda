@@ -6,7 +6,10 @@ spring:
     password: testpass
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
     open-in-view: false
     defer-datasource-initialization: true
   sql:
@@ -14,3 +17,8 @@ spring:
       mode: always
       data-locations: classpath:/data.sql
       platform: mysql
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.orm.jdbc.bind: TRACE

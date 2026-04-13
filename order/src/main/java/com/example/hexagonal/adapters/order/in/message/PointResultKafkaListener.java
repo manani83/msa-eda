@@ -7,6 +7,8 @@ import com.example.hexagonal.application.event.point.PointReservedEvent;
 import com.example.hexagonal.application.order.OrderSagaOrchestrator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
@@ -17,6 +19,7 @@ import java.time.Instant;
 @Component
 @ConditionalOnProperty(name = "order.saga.listener.enabled", havingValue = "true")
 public class PointResultKafkaListener {
+    private static final Logger log = LoggerFactory.getLogger(PointResultKafkaListener.class);
     private final OrderSagaOrchestrator orderSagaOrchestrator;
     private final ObjectMapper objectMapper;
 
@@ -34,11 +37,29 @@ public class PointResultKafkaListener {
         JsonNode root = objectMapper.readTree(message);
         String eventType = text(root, "eventType");
         if ("point.reserved".equals(eventType)) {
-            orderSagaOrchestrator.handlePointReserved(envelope(root, PointReservedEvent.class));
+            EventEnvelope<PointReservedEvent> envelope = envelope(root, PointReservedEvent.class);
+            log.info(
+                    "Kafka receive topic={} eventType={} correlationId={} traceId={} payload={}",
+                    OrderEventTopics.POINT_RESERVE_RESULT_V1,
+                    envelope.eventType(),
+                    envelope.correlationId(),
+                    envelope.traceId(),
+                    envelope.payload()
+            );
+            orderSagaOrchestrator.handlePointReserved(envelope);
             return;
         }
         if ("point.failed".equals(eventType)) {
-            orderSagaOrchestrator.handlePointFailed(envelope(root, PointFailedEvent.class));
+            EventEnvelope<PointFailedEvent> envelope = envelope(root, PointFailedEvent.class);
+            log.info(
+                    "Kafka receive topic={} eventType={} correlationId={} traceId={} payload={}",
+                    OrderEventTopics.POINT_RESERVE_RESULT_V1,
+                    envelope.eventType(),
+                    envelope.correlationId(),
+                    envelope.traceId(),
+                    envelope.payload()
+            );
+            orderSagaOrchestrator.handlePointFailed(envelope);
             return;
         }
         throw new IllegalArgumentException("Unsupported point event type: " + eventType);

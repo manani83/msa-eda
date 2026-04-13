@@ -6,6 +6,8 @@ import com.example.hexagonal.application.coupon.message.CouponEventTopics;
 import com.example.hexagonal.application.coupon.port.in.ApplyCouponCommand;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
@@ -15,6 +17,7 @@ import java.io.IOException;
 @Component
 @ConditionalOnProperty(name = "coupon.command.listener.enabled", havingValue = "true")
 public class CouponApplyCommandKafkaListener {
+    private static final Logger log = LoggerFactory.getLogger(CouponApplyCommandKafkaListener.class);
     private final CouponApplyCommandBiz couponApplyCommandBiz;
     private final ObjectMapper objectMapper;
 
@@ -37,6 +40,14 @@ public class CouponApplyCommandKafkaListener {
         }
 
         CouponApplyCommandMessage payload = objectMapper.treeToValue(root.get("payload"), CouponApplyCommandMessage.class);
+        log.info(
+                "Kafka receive topic={} eventType={} correlationId={} traceId={} payload={}",
+                CouponEventTopics.COUPON_APPLY_COMMAND_V1,
+                eventType,
+                text(root, "correlationId"),
+                text(root, "traceId"),
+                payload
+        );
         couponApplyCommandBiz.apply(new ApplyCouponCommand(
                 payload.orderId(),
                 payload.benefitRequestId(),

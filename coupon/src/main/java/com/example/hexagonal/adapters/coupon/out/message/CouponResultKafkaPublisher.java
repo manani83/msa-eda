@@ -9,6 +9,8 @@ import com.example.hexagonal.application.coupon.message.CouponResultCode;
 import com.example.hexagonal.application.coupon.port.out.CouponResultPublishPort;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +19,7 @@ import java.util.UUID;
 
 @Component
 public class CouponResultKafkaPublisher implements CouponResultPublishPort {
+    private static final Logger log = LoggerFactory.getLogger(CouponResultKafkaPublisher.class);
     private static final String PRODUCER = "coupon-service";
     private static final String AGGREGATE_TYPE = "order";
     private static final int SCHEMA_VERSION = 1;
@@ -66,10 +69,20 @@ public class CouponResultKafkaPublisher implements CouponResultPublishPort {
     // 공통 envelope를 직렬화해 result topic으로 보낸다.
     private void publish(String orderId, CouponEventEnvelope<?> envelope) {
         try {
+            String message = objectMapper.writeValueAsString(envelope);
+            log.info(
+                    "Kafka send topic={} key={} eventType={} correlationId={} traceId={} payload={}",
+                    CouponEventTopics.COUPON_APPLY_RESULT_V1,
+                    CouponEventTopics.messageKey(orderId),
+                    envelope.eventType(),
+                    envelope.correlationId(),
+                    envelope.traceId(),
+                    message
+            );
             kafkaTemplate.send(
                     CouponEventTopics.COUPON_APPLY_RESULT_V1,
                     CouponEventTopics.messageKey(orderId),
-                    objectMapper.writeValueAsString(envelope)
+                    message
             );
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Failed to serialize coupon result event", exception);

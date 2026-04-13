@@ -6,6 +6,8 @@ import com.example.hexagonal.point.application.port.in.PointReserveCommandBiz;
 import com.example.hexagonal.point.application.port.in.ReservePointCommand;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
@@ -18,6 +20,7 @@ import java.io.IOException;
 @Component
 @ConditionalOnProperty(name = "point.command.listener.enabled", havingValue = "true")
 public class PointReserveCommandKafkaListener {
+    private static final Logger log = LoggerFactory.getLogger(PointReserveCommandKafkaListener.class);
     private final PointReserveCommandBiz pointReserveCommandBiz;
     private final ObjectMapper objectMapper;
 
@@ -41,6 +44,14 @@ public class PointReserveCommandKafkaListener {
         }
 
         PointReserveCommandEvent payload = objectMapper.treeToValue(root.get("payload"), PointReserveCommandEvent.class);
+        log.info(
+                "Kafka receive topic={} eventType={} correlationId={} traceId={} payload={}",
+                OrderEventTopics.POINT_RESERVE_COMMAND_V1,
+                eventType,
+                text(root, "correlationId"),
+                text(root, "traceId"),
+                payload
+        );
         pointReserveCommandBiz.reserve(new ReservePointCommand(
                 payload.orderId(),
                 payload.benefitRequestId(),
