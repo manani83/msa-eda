@@ -19,6 +19,8 @@ import com.example.hexagonal.application.event.point.PointResultCode;
 import com.example.hexagonal.application.order.port.in.CreateOrderCommand;
 import com.example.hexagonal.application.order.port.in.CreateOrderResult;
 import com.example.hexagonal.domain.order.OrderStatus;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -54,9 +56,13 @@ class OrderSagaOrchestratorIntegrationTest {
     @Autowired
     private OrderOutboxJpaRepository orderOutboxJpaRepository;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     @Test
     void handle_coupon_applied_when_point_requested_then_updates_order_and_enqueues_point_command() {
         CreateOrderResult result = createOrderBiz.create(command("WELCOME10", 300L));
+        List<Long> itemIdsBefore = orderItemIds(result.getOrderId());
         OrderBenefitSagaEntity createdSaga = orderBenefitSagaJpaRepository.findByOrderId(result.getOrderId()).orElseThrow();
 
         orderSagaOrchestrator.handleCouponApplied(envelope(
@@ -66,9 +72,11 @@ class OrderSagaOrchestratorIntegrationTest {
                 new CouponAppliedEvent(result.getOrderId(), createdSaga.getBenefitRequestId(), "WELCOME10", 200L, CouponResultCode.APPLIED)
         ));
 
+        List<Long> itemIdsAfter = orderItemIds(result.getOrderId());
         OrderBenefitSagaEntity updatedSaga = orderBenefitSagaJpaRepository.findByOrderId(result.getOrderId()).orElseThrow();
         OrderOutboxEntity latestOutbox = orderOutboxJpaRepository.findByAggregateIdOrderByIdAsc(result.getOrderId()).get(1);
 
+        assertThat(itemIdsAfter).containsExactlyElementsOf(itemIdsBefore);
         assertThat(orderJpaRepository.findById(result.getOrderId()).orElseThrow().getStatus())
                 .isEqualTo(OrderStatus.PENDING_BENEFITS.getCode());
         assertThat(orderJpaRepository.findById(result.getOrderId()).orElseThrow().getDiscountAmount()).isEqualTo(200L);
@@ -193,5 +201,17 @@ class OrderSagaOrchestratorIntegrationTest {
                 orderId,
                 payload
         );
+    }
+
+    private List<Long> orderItemIds(String orderId) {
+        entityManager.flush();
+        entityManager.clear();
+        List<?> rows = entityManager.createNativeQuery(
+                        "select id from order_items where order_id = :orderId order by id")
+                .setParameter("orderId", orderId)
+                .getResultList();
+        return rows.stream()
+                .map(row -> ((Number) row).longValue())
+                .toList();
     }
 }

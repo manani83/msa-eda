@@ -30,9 +30,14 @@ public class OrderPersistenceAdapter implements OrderCommandPort, OrderQueryPort
 
     @Override
     public Order save(Order order) {
-        OrderEntity entity = toEntity(order);
-        OrderEntity saved = repository.save(entity);
-        return toDomain(saved);
+        if (order.getOrderId() == null) {
+            return toDomain(repository.save(toNewEntity(order)));
+        }
+
+        OrderEntity entity = repository.findById(order.getOrderId())
+                .orElseThrow(() -> new IllegalArgumentException("Order not found: " + order.getOrderId()));
+        updateMutableFields(entity, order);
+        return order;
     }
 
     @Override
@@ -41,13 +46,9 @@ public class OrderPersistenceAdapter implements OrderCommandPort, OrderQueryPort
                 .map(this::toDomain);
     }
 
-    private OrderEntity toEntity(Order order) {
+    private OrderEntity toNewEntity(Order order) {
         OrderEntity entity = new OrderEntity();
-        if (order.getOrderId() == null) {
-            entity.setOrderId(generateOrderId(order.getCreatedAt()));
-        } else {
-            entity.setOrderId(order.getOrderId());
-        }
+        entity.setOrderId(generateOrderId(order.getCreatedAt()));
         entity.setUserId(order.getUserId());
         entity.setStatus(order.getStatus().getCode());
         entity.setTotalAmount(order.getTotalAmount().getAmount());
@@ -68,6 +69,14 @@ public class OrderPersistenceAdapter implements OrderCommandPort, OrderQueryPort
         }
 
         return entity;
+    }
+
+    // 주문 생성 이후에는 본문과 품목을 다시 쓰지 않고 변경 컬럼만 갱신한다.
+    private void updateMutableFields(OrderEntity entity, Order order) {
+        entity.setStatus(order.getStatus().getCode());
+        entity.setTotalAmount(order.getTotalAmount().getAmount());
+        entity.setDiscountAmount(order.getDiscountAmount().getAmount());
+        entity.setCouponCode(order.getCouponCode());
     }
 
     private Order toDomain(OrderEntity entity) {
@@ -101,12 +110,16 @@ public class OrderPersistenceAdapter implements OrderCommandPort, OrderQueryPort
     private String generateOrderId(Instant createdAt) {
         LocalDate date = createdAt.atZone(ORDER_ID_ZONE).toLocalDate();
         String datePrefix = DateTimeFormatter.BASIC_ISO_DATE.format(date);
-        sequenceRepository.initSequence(datePrefix);
         OrderSequenceEntity sequence = sequenceRepository.findForUpdate(datePrefix)
-                .orElseThrow(() -> new IllegalStateException("Order sequence missing for " + datePrefix));
+                .orElseGet(() -> initSequence(datePrefix));
         long nextSequence = sequence.getNextSeq();
         sequence.setNextSeq(nextSequence + 1);
-        sequenceRepository.save(sequence);
         return datePrefix + String.format("%06d", nextSequence);
+    }
+
+    private OrderSequenceEntity initSequence(String datePrefix) {
+        sequenceRepository.initSequence(datePrefix);
+        return sequenceRepository.findForUpdate(datePrefix)
+                .orElseThrow(() -> new IllegalStateException("Order sequence missing for " + datePrefix));
     }
 }

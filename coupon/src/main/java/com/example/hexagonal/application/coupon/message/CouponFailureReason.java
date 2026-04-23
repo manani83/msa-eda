@@ -1,6 +1,6 @@
 package com.example.hexagonal.application.coupon.message;
 
-import java.util.Arrays;
+import java.util.Map;
 
 public enum CouponFailureReason {
     NOT_FOUND("NOT_FOUND", "쿠폰을 찾을 수 없음"),
@@ -8,6 +8,14 @@ public enum CouponFailureReason {
     BELOW_MIN_ORDER_AMOUNT("BELOW_MIN_ORDER_AMOUNT", "최소 주문 금액 미만"),
     INVALID_STATE("INVALID_STATE", "잘못된 쿠폰 상태"),
     INTERNAL_ERROR("INTERNAL_ERROR", "내부 처리 오류");
+
+    private static final Map<String, CouponFailureReason> BY_CODE = Map.of(
+            NOT_FOUND.code, NOT_FOUND,
+            EXPIRED.code, EXPIRED,
+            BELOW_MIN_ORDER_AMOUNT.code, BELOW_MIN_ORDER_AMOUNT,
+            INVALID_STATE.code, INVALID_STATE,
+            INTERNAL_ERROR.code, INTERNAL_ERROR
+    );
 
     private final String code;
     private final String description;
@@ -26,9 +34,10 @@ public enum CouponFailureReason {
     }
 
     public static CouponFailureReason fromCode(String code) {
-        return Arrays.stream(values())
-                .filter(reason -> reason.code.equals(code))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Unknown CouponFailureReason code: " + code));
+        CouponFailureReason reason = BY_CODE.get(code);
+        if (reason == null) {
+            throw new IllegalArgumentException("Unknown CouponFailureReason code: " + code);
+        }
+        return reason;
     }
 }

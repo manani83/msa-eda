@@ -1,10 +1,11 @@
 package com.example.hexagonal.point.adapters.point.in.message;
 
 import com.example.hexagonal.application.event.order.OrderEventTopics;
+import com.example.hexagonal.application.event.common.EventEnvelope;
 import com.example.hexagonal.application.event.point.PointReserveCommandEvent;
 import com.example.hexagonal.point.application.port.in.PointReserveCommandBiz;
 import com.example.hexagonal.point.application.port.in.ReservePointCommand;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,12 +22,17 @@ import java.io.IOException;
 @ConditionalOnProperty(name = "point.command.listener.enabled", havingValue = "true")
 public class PointReserveCommandKafkaListener {
     private static final Logger log = LoggerFactory.getLogger(PointReserveCommandKafkaListener.class);
+    private static final String SUPPORTED_EVENT_TYPE = "point.reserve.command";
+
     private final PointReserveCommandBiz pointReserveCommandBiz;
     private final ObjectMapper objectMapper;
+    private final JavaType envelopeType;
 
     public PointReserveCommandKafkaListener(PointReserveCommandBiz pointReserveCommandBiz, ObjectMapper objectMapper) {
         this.pointReserveCommandBiz = pointReserveCommandBiz;
         this.objectMapper = objectMapper;
+        this.envelopeType = objectMapper.getTypeFactory()
+                .constructParametricType(EventEnvelope.class, PointReserveCommandEvent.class);
     }
 
     /**
@@ -37,35 +43,25 @@ public class PointReserveCommandKafkaListener {
             groupId = "${point.command.listener.group-id:point-command}"
     )
     public void listen(String message) throws IOException {
-        JsonNode root = objectMapper.readTree(message);
-        String eventType = text(root, "eventType");
-        if (!"point.reserve.command".equals(eventType)) {
-            throw new IllegalArgumentException("Unsupported point event type: " + eventType);
+        EventEnvelope<PointReserveCommandEvent> envelope = objectMapper.readValue(message, envelopeType);
+        if (!SUPPORTED_EVENT_TYPE.equals(envelope.eventType())) {
+            throw new IllegalArgumentException("Unsupported point event type: " + envelope.eventType());
         }
-
-        PointReserveCommandEvent payload = objectMapper.treeToValue(root.get("payload"), PointReserveCommandEvent.class);
         log.info(
                 "Kafka receive topic={} eventType={} correlationId={} traceId={} payload={}",
                 OrderEventTopics.POINT_RESERVE_COMMAND_V1,
-                eventType,
-                text(root, "correlationId"),
-                text(root, "traceId"),
-                payload
+                envelope.eventType(),
+                envelope.correlationId(),
+                envelope.traceId(),
+                envelope.payload()
         );
         pointReserveCommandBiz.reserve(new ReservePointCommand(
-                payload.orderId(),
-                payload.benefitRequestId(),
-                payload.userId(),
-                payload.requestedPointAmount(),
-                payload.payableAmount(),
-                payload.createdAt()
+                envelope.payload().orderId(),
+                envelope.payload().benefitRequestId(),
+                envelope.payload().userId(),
+                envelope.payload().requestedPointAmount(),
+                envelope.payload().payableAmount(),
+                envelope.payload().createdAt()
         ));
-    }
-
-    /**
-     * JSON 필드에서 문자열 값을 읽는다.
-     */
-    private String text(JsonNode root, String fieldName) {
-        return root.get(fieldName).asText();
     }
 }

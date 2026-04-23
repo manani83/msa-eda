@@ -118,12 +118,13 @@ public class OrderSagaOrchestrator {
 
     // 쿠폰 서비스에 전달할 적용 command를 outbox에 적재한다.
     private void enqueueCouponApplyCommand(Order order, OrderBenefitSaga saga) {
+        long subtotalAmount = order.getTotalAmount().getAmount();
         CouponApplyCommandEvent payload = new CouponApplyCommandEvent(
                 order.getOrderId(),
                 saga.getBenefitRequestId(),
                 order.getUserId(),
                 order.getCouponCode(),
-                order.subtotalAmount(),
+                subtotalAmount,
                 order.getCreatedAt()
         );
         outboxCommandPort.save(OutboxMessage.pending(

@@ -38,6 +38,22 @@ public class PointAccountPersistenceAdapter implements PointAccountQueryPort, Po
     }
 
     /**
+     * 기존 계정의 잔액만 직접 갱신한다.
+     */
+    @Override
+    public PointAccount update(PointAccount account) {
+        int updatedRows = pointAccountJpaRepository.updateBalance(
+                account.getUserId(),
+                account.getAvailablePointAmount(),
+                account.getUpdatedAt()
+        );
+        if (updatedRows == 0) {
+            throw new IllegalArgumentException("Point account not found: " + account.getUserId());
+        }
+        return account;
+    }
+
+    /**
      * JPA 엔티티를 도메인 객체로 바꾼다.
      */
     private PointAccount toDomain(PointAccountEntity entity) {

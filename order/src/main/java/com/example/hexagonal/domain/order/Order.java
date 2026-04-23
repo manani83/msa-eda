@@ -163,7 +163,7 @@ public class Order {
 
     // 쿠폰 할인 결과를 반영해 주문 금액과 상태를 갱신한다.
     public Order applyCouponDiscount(long couponDiscountAmount, boolean keepPending) {
-        long subtotal = subtotalAmount();
+        long currentAmount = totalAmount.getAmount();
         return new Order(
                 orderId,
                 userId,
@@ -172,7 +172,7 @@ public class Order {
                 keepPending ? OrderStatus.PENDING_BENEFITS : OrderStatus.BENEFITS_COMPLETED,
                 couponCode,
                 Money.of(couponDiscountAmount),
-                Money.of(subtotal - couponDiscountAmount),
+                Money.of(currentAmount - couponDiscountAmount),
                 createdAt
         );
     }

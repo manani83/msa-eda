@@ -87,7 +87,7 @@ public class PointReserveCommandBizImpl implements PointReserveCommandBiz {
         }
 
         PointAccount updatedAccount = account.deduct(command.requestedPointAmount(), command.createdAt());
-        pointAccountCommandPort.save(updatedAccount);
+        pointAccountCommandPort.update(updatedAccount);
         pointResultPublishPort.publishReserved(
                 command.orderId(),
                 command.benefitRequestId(),

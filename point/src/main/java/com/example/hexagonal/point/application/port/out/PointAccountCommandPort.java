@@ -10,4 +10,9 @@ public interface PointAccountCommandPort {
      * 계정 잔액 변경 결과를 저장한다.
      */
     PointAccount save(PointAccount account);
+
+    /**
+     * 기존 계정의 잔액 변경 결과를 직접 갱신한다.
+     */
+    PointAccount update(PointAccount account);
 }
